@@ -1,0 +1,332 @@
+{
+  "info": {
+    "name": "PearlAI API (Auth + Negatives)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" },
+    { "key": "email", "value": "annotator+1@example.com" },
+    { "key": "password", "value": "secret123" },
+    { "key": "projectId", "value": "" },
+    { "key": "imageId", "value": "" },
+    { "key": "annotationId", "value": "" },
+    { "key": "userId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] } }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/signup",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Annotator One\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"role\": \"annotator\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('created', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('token', data.token);",
+                  "pm.collectionVariables.set('userId', data.user.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG: POST /auth/signup (duplicate email)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Annotator One\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] }
+          }
+        },
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('ok', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('token', data.token);",
+                  "pm.collectionVariables.set('userId', data.user.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG: POST /auth/login (wrong password)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"wrongpass\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "POST /projects (create)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Demo Project\",\n  \"description\": \"Example\"\n}" },
+            "url": { "raw": "{{baseUrl}}/projects", "host": ["{{baseUrl}}"], "path": ["projects"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('created', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('projectId', data._id || data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG: POST /projects (missing name)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"description\": \"No name\"\n}" },
+            "url": { "raw": "{{baseUrl}}/projects", "host": ["{{baseUrl}}"], "path": ["projects"] }
+          }
+        },
+        {
+          "name": "GET /projects/:id",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/projects/{{projectId}}", "host": ["{{baseUrl}}"], "path": ["projects", "{{projectId}}"] } }
+        },
+        {
+          "name": "NEG: GET /projects/:id (invalid id)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/projects/notanid", "host": ["{{baseUrl}}"], "path": ["projects", "notanid"] } }
+        },
+        {
+          "name": "GET /projects/:id/stats",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/projects/{{projectId}}/stats", "host": ["{{baseUrl}}"], "path": ["projects", "{{projectId}}", "stats"] } }
+        },
+        {
+          "name": "NEG: GET /projects/:id/stats (invalid id)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/projects/notanid/stats", "host": ["{{baseUrl}}"], "path": ["projects", "notanid", "stats"] } }
+        },
+        {
+          "name": "POST /projects/:id/images (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"images\": [\n    { \"uri\": \"https://example.com/img1.jpg\", \"width\": 640, \"height\": 480 }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/projects/{{projectId}}/images", "host": ["{{baseUrl}}"], "path": ["projects", "{{projectId}}", "images"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('created', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "if (data.images && data.images.length) { pm.collectionVariables.set('imageId', data.images[0]._id || data.images[0].id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG: POST /projects/:id/images (invalid id)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"images\": [\n    { \"uri\": \"https://example.com/img2.jpg\", \"width\": 640, \"height\": 480 }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/projects/notanid/images", "host": ["{{baseUrl}}"], "path": ["projects", "notanid", "images"] }
+          }
+        },
+        {
+          "name": "NEG: POST /projects/:id/images (empty array)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"images\": []\n}" },
+            "url": { "raw": "{{baseUrl}}/projects/{{projectId}}/images", "host": ["{{baseUrl}}"], "path": ["projects", "{{projectId}}", "images"] }
+          }
+        },
+        {
+          "name": "NEG: POST /projects/:id/images (missing width/height)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"images\": [\n    { \"uri\": \"https://example.com/img3.jpg\" }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/projects/{{projectId}}/images", "host": ["{{baseUrl}}"], "path": ["projects", "{{projectId}}", "images"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Images",
+      "item": [
+        {
+          "name": "GET /images/:id",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/images/{{imageId}}", "host": ["{{baseUrl}}"], "path": ["images", "{{imageId}}"] } }
+        },
+        {
+          "name": "NEG: GET /images/:id (invalid id)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/images/notanid", "host": ["{{baseUrl}}"], "path": ["images", "notanid"] } }
+        }
+      ]
+    },
+    {
+      "name": "Annotations",
+      "item": [
+        {
+          "name": "POST /annotations (polygon)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"label\": \"cat\",\n  \"segmentation\": {\n    \"type\": \"polygon\",\n    \"polygons\": [ { \"rings\": [ [[10,10],[100,10],[100,100],[10,100]] ] } ]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('created', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('annotationId', data._id || data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /annotations (RLE)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"label\": \"dog\",\n  \"segmentation\": {\n    \"type\": \"rle\",\n    \"size\": [480, 640],\n    \"counts\": [1000, 200, 300, 150, 500]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "NEG: POST /annotations (invalid polygon ring)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"label\": \"invalid-cat\",\n  \"segmentation\": {\n    \"type\": \"polygon\",\n    \"polygons\": [ { \"rings\": [ [[10,10],[100,10]] ] } ]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "NEG: POST /annotations (RLE size mismatch)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"label\": \"dog-bad-size\",\n  \"segmentation\": {\n    \"type\": \"rle\",\n    \"size\": [480, 641],\n    \"counts\": [1000, 200, 300, 150, 500]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "NEG: POST /annotations (area mismatch)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"label\": \"cat-bad-area\",\n  \"area\": 1,\n  \"segmentation\": {\n    \"type\": \"polygon\",\n    \"polygons\": [ { \"rings\": [ [[10,10],[100,10],[100,100],[10,100]] ] } ]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "NEG: POST /annotations (missing label)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"segmentation\": {\n    \"type\": \"polygon\",\n    \"polygons\": [ { \"rings\": [ [[10,10],[100,10],[100,100],[10,100]] ] } ]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "NEG: POST /annotations (missing segmentation)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"label\": \"cat\"\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "NEG: POST /annotations (invalid image id)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"notanid\",\n  \"label\": \"cat\",\n  \"segmentation\": {\n    \"type\": \"polygon\",\n    \"polygons\": [ { \"rings\": [ [[10,10],[100,10],[100,100],[10,100]] ] } ]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "NEG: POST /annotations (unauthorized when AUTH_REQUIRED=true)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"image\": \"{{imageId}}\",\n  \"label\": \"cat\",\n  \"segmentation\": {\n    \"type\": \"polygon\",\n    \"polygons\": [ { \"rings\": [ [[10,10],[100,10],[100,100],[10,100]] ] } ]\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/annotations", "host": ["{{baseUrl}}"], "path": ["annotations"] }
+          }
+        },
+        {
+          "name": "GET /annotations/:id",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/annotations/{{annotationId}}", "host": ["{{baseUrl}}"], "path": ["annotations", "{{annotationId}}"] } }
+        },
+        {
+          "name": "NEG: GET /annotations/:id (invalid id)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/annotations/notanid", "host": ["{{baseUrl}}"], "path": ["annotations", "notanid"] } }
+        },
+        {
+          "name": "GET /annotations (query by label)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/annotations?label=cat", "host": ["{{baseUrl}}"], "path": ["annotations"], "query": [{"key":"label","value":"cat"}] } }
+        },
+        {
+          "name": "GET /annotations/:id/rank",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/annotations/{{annotationId}}/rank", "host": ["{{baseUrl}}"], "path": ["annotations", "{{annotationId}}", "rank"] } }
+        }
+      ]
+    }
+  ]
+}
