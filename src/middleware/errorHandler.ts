@@ -3,11 +3,17 @@ import logger from '../lib/logger';
 import { ApiError } from '../lib/errors';
 
 export function notFoundHandler(req: Request, res: Response, _next: NextFunction) {
+  if (res.headersSent) {
+    return;
+  }
   logger.warn({ method: req.method, url: req.originalUrl }, 'Route not found');
   res.status(404).json({ error: { message: 'Not Found' } });
 }
 
 export function errorHandler(err: any, req: Request, res: Response, _next: NextFunction) {
+  if (res.headersSent) {
+    return _next(err);
+  }
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';
 
