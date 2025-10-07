@@ -4,6 +4,7 @@ import { parsePagination } from '../utils/pagination';
 
 export async function createAnnotation(req: Request, res: Response) {
   const payload = { ...req.body };
+  if (!payload.createdBy && req.user?.id) payload.createdBy = req.user.id;
   const ann = await AnnotationService.create(payload);
   res.status(201).json(ann);
 }
