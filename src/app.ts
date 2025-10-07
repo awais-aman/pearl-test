@@ -24,6 +24,14 @@ app.use(pinoHttp({
   autoLogging: {
     ignore: (req) => req.url === '/api/health',
   },
+  customLogLevel: (_req, res, err) => {
+    const code = (res as any)?.statusCode ?? 0;
+    if (err || code >= 500) return 'error';
+    if (code >= 400) return 'warn';
+    return 'info';
+  },
+  customSuccessMessage: (req, res) => `${req.method} ${req.url} ${res.statusCode}`,
+  customErrorMessage: (req, res, err) => `${req.method} ${req.url} ${res.statusCode} - ${err?.message || 'error'}`,
   serializers: {
     req: (req) => ({ id: (req as any).id, method: req.method, url: (req as any).originalUrl || req.url }),
     res: (res) => ({ statusCode: res.statusCode }),
